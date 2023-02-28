@@ -1,0 +1,28 @@
+/ {
+    leds {
+        btn_out: btn_out {
+			gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
+			label = "Override physical lamp button";
+		};
+    };
+    zephyr,user {
+        io-channels = <&adc 0>; /* led monitor, about 0V when off, up to 2.54V, about 1.2V when on */
+        //btn-output = <&gpio1 13 (GPIO_ACTIVE_LOW)>; /*  */
+    };
+};
+
+&adc {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1_6";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,vref-mv = <600>;
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,input-positive = <NRF_SAADC_AIN5>; /* P0.29 */
+		// zephyr,input-negative = <NRF_SAADC_AIN7>; /* P0.31 */
+		zephyr,resolution = <12>;
+	};
+};

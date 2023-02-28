@@ -1,0 +1,17 @@
+
+manifest:
+  version: "0.12"
+  remotes:
+      # nRF Connect SDK base URL.
+    - name: ncs
+      url-base: https://github.com/nrfconnect
+  # The list of external projects for the nRF Connect SDK.
+  #
+  projects:
+    - name: nrf
+      remote: ncs
+      repo-path: sdk-nrf
+      revision: v2.2.0
+      import: true
+  self:
+    path: project
