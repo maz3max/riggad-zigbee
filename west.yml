@@ -12,6 +12,8 @@ manifest:
       remote: ncs
       repo-path: sdk-nrf
       revision: v2.2.0
-      import: true
+      import:
+        name-blocklist:
+          - loramac-node
   self:
-    path: project
+    path: application

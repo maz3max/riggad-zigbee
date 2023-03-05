@@ -1,5 +1,5 @@
-identifier: nrf52840dongle_nrf52840
-name: nRF52840-Dongle-NRF52840
+identifier: dongle
+name: nRF52840-Dongle-NRF52840-custom
 type: mcu
 arch: arm
 ram: 256
