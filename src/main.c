@@ -42,10 +42,10 @@ struct adc_sequence adc_seq = {
 	.buffer_size = sizeof(adc_val),
 };
 
-bool is_lamp_on(void) {
+bool check_lamp_status(bool *status) {
 	int err;
 
-	for (size_t i = 0; i < 3; ++i) {
+	for (size_t i = 0; i < 10; ++i) {
 		err = adc_read(led_monitor_dt.dev, &adc_seq);
 
 		if (err) {
@@ -58,7 +58,8 @@ bool is_lamp_on(void) {
 		if (adc_val > 10000) {
 			continue;
 		}
-		return adc_val < 200;
+		*status = adc_val < 200;
+		return true;
 	}
 	return false;
 }
@@ -338,7 +339,9 @@ static void on_off_set_value(zb_bool_t on)
 		(zb_uint8_t *)&on,
 		ZB_FALSE);
 
-	if (is_lamp_on() != on) {
+	bool status = true;
+
+	if (check_lamp_status(&status) && (status != on)) {
 		trigger_lamp();
 	}
 }
@@ -656,13 +659,14 @@ void main(void)
 		LOG_ERR("adc config wrong?");
 	}
 
-	LOG_INF("lamp is %s", (is_lamp_on()?"on":"off"));
 	/* ADC fun over */
 
+	bool lamp_status = true;
 
 	LOG_INF("ZBOSS Light Bulb example started");
 	while (1) {
-		dev_ctx.on_off_attr.on_off = is_lamp_on();
+		check_lamp_status(&lamp_status);
+		dev_ctx.on_off_attr.on_off = lamp_status;
 
 		ZB_ZCL_SET_ATTRIBUTE(
 			DIMMABLE_LIGHT_ENDPOINT,
