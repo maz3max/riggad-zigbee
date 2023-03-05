@@ -1,0 +1,49 @@
+name: 'Build and Release'
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:  
+      - uses: actions/checkout@v3
+        with:
+          path: application
+
+      - name: west init
+        run: |
+          docker run --rm \
+            -v $PWD:/workdir \
+            -w /workdir \
+            ghcr.io/zephyrproject-rtos/ci:v0.24.12 \
+            west init -l application
+
+      - name: west update
+        run: |
+          docker run --rm \
+            -v $PWD:/workdir \
+            -w /workdir/application \
+            ghcr.io/zephyrproject-rtos/ci:v0.24.12 \
+            west update
+
+      - name: build app
+        run: |
+          docker run --rm \
+            -v $PWD:/workdir \
+            -w /workdir/application \
+            ghcr.io/zephyrproject-rtos/ci:v0.24.12 \
+            west build -b dongle
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: |
+            application/build/zephyr/zephyr.hex
+            application/build/zephyr/zephyr.elf
+            application/build/zephyr/zephyr.dts
+            application/build/zephyr/.config
