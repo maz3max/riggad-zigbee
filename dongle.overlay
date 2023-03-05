@@ -28,3 +28,5 @@
 		zephyr,resolution = <12>;
 	};
 };
+
+// #include "develop_on_nrf52840dk.dtsi"

@@ -28,7 +28,7 @@
 /** @cond internals_doc */
 
 /** Dimmable Light IN (server) clusters number */
-#define ZB_DIMMABLE_LIGHT_IN_CLUSTER_NUM 6
+#define ZB_DIMMABLE_LIGHT_IN_CLUSTER_NUM 7
 
 /** Dimmable Light OUT (client) clusters number */
 #define ZB_DIMMABLE_LIGHT_OUT_CLUSTER_NUM 0
@@ -60,6 +60,7 @@
 	cluster_list_name,							   \
 	basic_attr_list,							   \
 	identify_attr_list,							   \
+	temperature_measurement_attr_list,						\
 	groups_attr_list,							   \
 	scenes_attr_list,							   \
 	on_off_attr_list,							   \
@@ -73,6 +74,13 @@
 			ZB_ZCL_CLUSTER_SERVER_ROLE,				   \
 			ZB_ZCL_MANUF_CODE_INVALID				   \
 		),								   \
+		ZB_ZCL_CLUSTER_DESC(								\
+			ZB_ZCL_CLUSTER_ID_TEMP_MEASUREMENT,					\
+			ZB_ZCL_ARRAY_SIZE(temperature_measurement_attr_list, zb_zcl_attr_t),	\
+			(temperature_measurement_attr_list),					\
+			ZB_ZCL_CLUSTER_SERVER_ROLE,						\
+			ZB_ZCL_MANUF_CODE_INVALID						\
+		),	\
 		ZB_ZCL_CLUSTER_DESC(						   \
 			ZB_ZCL_CLUSTER_ID_BASIC,				   \
 			ZB_ZCL_ARRAY_SIZE(basic_attr_list, zb_zcl_attr_t),	   \
@@ -133,6 +141,7 @@
 		{										  \
 			ZB_ZCL_CLUSTER_ID_BASIC,						  \
 			ZB_ZCL_CLUSTER_ID_IDENTIFY,						  \
+			ZB_ZCL_CLUSTER_ID_TEMP_MEASUREMENT,				\
 			ZB_ZCL_CLUSTER_ID_SCENES,						  \
 			ZB_ZCL_CLUSTER_ID_GROUPS,						  \
 			ZB_ZCL_CLUSTER_ID_ON_OFF,						  \

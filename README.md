@@ -26,5 +26,5 @@ cd riggad-zigbee
 west init -m https://github.com/maz3max/riggad-zigbee.git
 west update
 cd application/
-west build -b dongle -- -DBOARD_ROOT=.
+west build
 ```

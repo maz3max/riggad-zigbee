@@ -28,11 +28,13 @@
 
 #include "zephyr/drivers/adc.h"
 #include "zephyr/drivers/gpio.h"
+#include <zephyr/drivers/sensor.h>
 
 LOG_MODULE_REGISTER(app, LOG_LEVEL_INF);
 
 static const struct adc_dt_spec led_monitor_dt = ADC_DT_SPEC_GET(DT_PATH(zephyr_user));
 static const struct gpio_dt_spec btn_output_dt = GPIO_DT_SPEC_GET(DT_NODELABEL(btn_out), gpios);
+static const struct device *temp_dev = DEVICE_DT_GET(DT_NODELABEL(temp));
 
 uint32_t adc_val;
 struct adc_sequence adc_seq = {
@@ -91,7 +93,7 @@ void trigger_lamp(void) {
 /* First 8 bytes specify the date of manufacturer of the device
  * in ISO 8601 format (YYYYMMDD). The rest (8 bytes) are manufacturer specific.
  */
-#define BULB_INIT_BASIC_DATE_CODE       "20200329"
+#define BULB_INIT_BASIC_DATE_CODE       "20230305"
 
 /* Type of power sources available for the device.
  * For possible values see section 3.2.2.2.8 of ZCL specification.
@@ -121,6 +123,8 @@ void trigger_lamp(void) {
 /* Button to start Factory Reset */
 #define FACTORY_RESET_BUTTON IDENTIFY_MODE_BUTTON
 
+/* Zigbee Cluster Library 4.4.2.2.1.1: MeasuredValue = 100x temperature in degrees Celsius */
+#define ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER 100
 
 /* Main application customizable context.
  * Stores all settings and static values.
@@ -132,6 +136,7 @@ typedef struct {
 	zb_zcl_groups_attrs_t groups_attr;
 	zb_zcl_on_off_attrs_t on_off_attr;
 	zb_zcl_level_control_attrs_t level_control_attr;
+	zb_zcl_temp_measurement_attrs_t temp_attrs;
 } bulb_device_ctx_t;
 
 /* Zigbee device application context storage. */
@@ -177,10 +182,18 @@ ZB_ZCL_DECLARE_LEVEL_CONTROL_ATTRIB_LIST(
 	&dev_ctx.level_control_attr.current_level,
 	&dev_ctx.level_control_attr.remaining_time);
 
+ZB_ZCL_DECLARE_TEMP_MEASUREMENT_ATTRIB_LIST(
+	temperature_measurement_attr_list,
+	&dev_ctx.temp_attrs.measure_value,
+	&dev_ctx.temp_attrs.min_measure_value,
+	&dev_ctx.temp_attrs.max_measure_value,
+	&dev_ctx.temp_attrs.tolerance);
+
 ZB_DECLARE_DIMMABLE_LIGHT_CLUSTER_LIST(
 	dimmable_light_clusters,
 	basic_attr_list,
 	identify_attr_list,
+	temperature_measurement_attr_list,
 	groups_attr_list,
 	scenes_attr_list,
 	on_off_attr_list,
@@ -418,6 +431,11 @@ static void bulb_clusters_attr_init(void)
 	dev_ctx.level_control_attr.remaining_time =
 		ZB_ZCL_LEVEL_CONTROL_REMAINING_TIME_DEFAULT_VALUE;
 
+	dev_ctx.temp_attrs.measure_value = ZB_ZCL_ATTR_TEMP_MEASUREMENT_VALUE_UNKNOWN;
+	dev_ctx.temp_attrs.min_measure_value = -40 * ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER;
+	dev_ctx.temp_attrs.max_measure_value = 85 * ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER;
+	dev_ctx.temp_attrs.tolerance = 5 * ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER;
+
 	ZB_ZCL_SET_ATTRIBUTE(
 		DIMMABLE_LIGHT_ENDPOINT,
 		ZB_ZCL_CLUSTER_ID_ON_OFF,
@@ -528,6 +546,44 @@ void zboss_signal_handler(zb_bufid_t bufid)
 	}
 }
 
+
+
+void publish_temperature(float temp)
+{
+	int16_t temperature_attribute = (int16_t)
+					(temp *
+					 ZCL_TEMPERATURE_MEASUREMENT_MEASURED_VALUE_MULTIPLIER);
+	zb_zcl_status_t status = zb_zcl_set_attr_val(DIMMABLE_LIGHT_ENDPOINT,
+							     ZB_ZCL_CLUSTER_ID_TEMP_MEASUREMENT,
+							     ZB_ZCL_CLUSTER_SERVER_ROLE,
+							     ZB_ZCL_ATTR_TEMP_MEASUREMENT_VALUE_ID,
+							     (zb_uint8_t *)&temperature_attribute,
+							     ZB_FALSE);
+	if (status) {
+		LOG_ERR("Failed to set ZCL attribute: %d", status);
+	}
+}
+
+float measure_temperature(void)
+{
+	struct sensor_value val;
+	int err;
+
+	err = sensor_sample_fetch(temp_dev);
+	if (err) {
+		LOG_ERR("sensor_sample_fetch failed: %d", err);
+		return 0.0f;
+	}
+
+	err = sensor_channel_get(temp_dev, SENSOR_CHAN_DIE_TEMP, &val);
+	if (err) {
+		LOG_ERR("sensor_channel_get failed: %d", err);
+		return 0.0f;
+	}
+
+	return sensor_value_to_double(&val);
+}
+
 void main(void)
 {
 	int err;
@@ -567,6 +623,10 @@ void main(void)
 	zigbee_enable();
 
 	/* ADC fun */
+	if (!device_is_ready(temp_dev)) {
+		LOG_ERR("temp dev not ready!");
+		return;
+	}
 	if (!device_is_ready(led_monitor_dt.dev)) {
 		LOG_ERR("adc dev not ready!");
 		return;
@@ -611,6 +671,9 @@ void main(void)
 			ZB_ZCL_ATTR_ON_OFF_ON_OFF_ID,
 			(zb_uint8_t *)&dev_ctx.on_off_attr.on_off,
 			ZB_FALSE);
+
+		publish_temperature(measure_temperature());
+
 		k_sleep(K_MSEC(RUN_LED_BLINK_INTERVAL));
 	}
 }
