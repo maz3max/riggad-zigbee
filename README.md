@@ -24,6 +24,7 @@ This will only work if you already have the setup to build Zephyr projects in ge
 mkdir riggad-zigbee
 cd riggad-zigbee
 west init -m https://github.com/maz3max/riggad-zigbee.git
+west update
 cd application/
 west build -b dongle -- -DBOARD_ROOT=.
 ```

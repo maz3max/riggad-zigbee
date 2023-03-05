@@ -530,7 +530,6 @@ void zboss_signal_handler(zb_bufid_t bufid)
 
 void main(void)
 {
-	int blink_status = 0;
 	int err;
 
 	LOG_INF("Starting ZBOSS Light Bulb example");
@@ -605,7 +604,6 @@ void main(void)
 	while (1) {
 		dev_ctx.on_off_attr.on_off = is_lamp_on();
 
-		//dk_set_led(RUN_STATUS_LED, (++blink_status) % 2);
 		ZB_ZCL_SET_ATTRIBUTE(
 			DIMMABLE_LIGHT_ENDPOINT,
 			ZB_ZCL_CLUSTER_ID_ON_OFF,

@@ -1,3 +1,6 @@
+&spi1 {
+	status = "disabled";
+};
 / {
     leds {
         btn_out: btn_out {
@@ -22,7 +25,6 @@
 		zephyr,vref-mv = <600>;
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
 		zephyr,input-positive = <NRF_SAADC_AIN5>; /* P0.29 */
-		// zephyr,input-negative = <NRF_SAADC_AIN7>; /* P0.31 */
 		zephyr,resolution = <12>;
 	};
 };
